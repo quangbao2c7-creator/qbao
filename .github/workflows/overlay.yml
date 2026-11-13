@@ -1,0 +1,39 @@
+name: Build OverlayTool.dylib
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unzip source
+        run: |
+          for z in *.zip; do unzip -o "$z"; done
+
+      - name: Build dylib (arm64, iOS)
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          xcrun --sdk iphoneos clang \
+            -arch arm64 \
+            -dynamiclib \
+            -fobjc-arc \
+            -isysroot "$SDK" \
+            -miphoneos-version-min=14.0 \
+            -framework UIKit \
+            -framework QuartzCore \
+            -framework Foundation \
+            -install_name @rpath/OverlayTool.dylib \
+            -o OverlayTool.dylib \
+            src/OverlayTool.m
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OverlayTool
+          path: OverlayTool.dylib
